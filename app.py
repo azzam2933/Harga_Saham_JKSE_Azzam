@@ -159,7 +159,7 @@ with tab1:
 
     # Candlestick (setahun terakhir)
     st.subheader("Candlestick – Setahun Terakhir")
-    last_year = df.last("365D").copy()
+    last_year = df[df.index >= df.index.max() - pd.Timedelta(days=365)].copy()
     fig, ax = plt.subplots(figsize=(14, 5))
     for date, row in last_year.iterrows():
         color = "green" if row["Close"] >= row["Open"] else "red"
