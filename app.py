@@ -62,6 +62,10 @@ def fig_style():
 with st.sidebar:
     st.image("Foto Berwarna.jpg", width=110)
     st.title("Muhamad Azzam Khoiri")
+    st.markdown(
+        "<p style='font-size:14px; color:gray; font-weight:normal; margin-top:-10px;'>Universitas Gunadarma</p>",
+        unsafe_allow_html=True
+    )
 
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
