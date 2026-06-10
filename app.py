@@ -74,11 +74,10 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Upload Dataset CSV
     uploaded_file = st.file_uploader(
         "Upload Dataset CSV",
         type=["csv"]
-)
+    )
 
     st.markdown("---")
 
@@ -89,13 +88,7 @@ with st.sidebar:
 
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
 
-    if run_btn:
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        st.success("Dataset berhasil diupload!")
-        st.dataframe(df.head())
-    else:
-        st.warning("Silakan upload dataset CSV terlebih dahulu.")
+
 
 # ─────────────────────────────────────────
 #  HEADER
