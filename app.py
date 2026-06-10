@@ -60,7 +60,7 @@ def fig_style():
 #  SIDEBAR
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/9/9b/IDX_Logo.svg", width=120)
+    st.image("C:\Users\Muh Azzam Khoiri\Pictures\Foto Berwarna.jpg", width=120)
     st.title("⚙️ Konfigurasi")
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
