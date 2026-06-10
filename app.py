@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 #  PAGE CONFIG
 # ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Prediksi Saham IHSG",
+    page_title="Prediksi Saham ^JKSE",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
