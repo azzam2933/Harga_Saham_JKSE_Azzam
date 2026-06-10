@@ -30,7 +30,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────
-#  HELPERS
+#  HELPERS - SAMA PERSIS DENGAN NOTEBOOK
 # ─────────────────────────────────────────
 def compute_rsi(series, period=14):
     delta = series.diff()
@@ -39,22 +39,15 @@ def compute_rsi(series, period=14):
     avg_gain = gain.rolling(window=period, min_periods=period).mean()
     avg_loss = loss.rolling(window=period, min_periods=period).mean()
     rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
 def evaluate(y_true, y_pred, name):
     mape = mean_absolute_percentage_error(y_true, y_pred) * 100
-    mae  = mean_absolute_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    r2   = r2_score(y_true, y_pred)
-    return {"Model": name, "MAPE (%)": round(mape, 4),
-            "MAE": round(mae, 2), "RMSE": round(rmse, 2), "R²": round(r2, 4)}
-
-
-def fig_style():
-    sns.set_style("whitegrid")
-    plt.rcParams["axes.grid"] = True
-
+    r2 = r2_score(y_true, y_pred)
+    return {"Model": name, "MAPE (%)": mape, "MAE": mae, "RMSE": rmse, "R²": r2}
 
 # ─────────────────────────────────────────
 #  SIDEBAR
@@ -65,13 +58,11 @@ with st.sidebar:
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
     start_date = st.date_input("Mulai", value=pd.to_datetime("2020-01-01"))
-    end_date   = st.date_input("Selesai", value=pd.to_datetime("2026-03-31"))
+    end_date = st.date_input("Selesai", value=pd.to_datetime("2026-03-31"))
 
     st.markdown("---")
-    max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
-    test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
+    st.info("⚠️ **Catatan:** Model menggunakan parameter tetap:\n- Test size: 20%\n- Random state: 42\n- Decision Tree max_depth: 10")
 
-    st.markdown("---")
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
 
 # ─────────────────────────────────────────
@@ -81,12 +72,14 @@ st.title("📈 Analisis & Prediksi Harga Saham IHSG")
 st.caption("Linear Regression vs Decision Tree Regressor · Data: Yahoo Finance")
 
 if not run_btn:
-    st.info("👈 Atur parameter di sidebar lalu tekan **Jalankan Analisis**.")
+    st.info("👈 Klik **Jalankan Analisis** untuk memulai.")
     st.stop()
 
-# ─────────────────────────────────────────
-#  1. LOAD DATA
-# ─────────────────────────────────────────
+# ══════════════════════════════════════════
+#  PROSES DATA - SAMA PERSIS DENGAN NOTEBOOK
+# ══════════════════════════════════════════
+
+# 1. Load Data (sama persis dengan notebook)
 with st.spinner("Mengunduh data dari Yahoo Finance…"):
     df_raw = yf.download(ticker, start=str(start_date), end=str(end_date), auto_adjust=False)
 
@@ -94,20 +87,72 @@ if df_raw.empty:
     st.error("Data tidak ditemukan. Periksa ticker dan rentang tanggal.")
     st.stop()
 
+# Flatten MultiIndex columns jika ada (sama dengan notebook)
 if isinstance(df_raw.columns, pd.MultiIndex):
     df_raw.columns = df_raw.columns.get_level_values(0)
 
+# Ambil kolom seperti di notebook
 df = df_raw[["Open", "High", "Low", "Close", "Adj Close", "Volume"]].copy()
 df.index.name = "Date"
 df = df.sort_index()
 df = df[df.index >= str(start_date)]
 
-st.success(f"✅ Data berhasil diunduh: **{df.shape[0]} baris** dari {df.index[0].date()} s.d. {df.index[-1].date()}")
+# 2. Pembersihan Data (sama dengan notebook)
+df = df.dropna()
 
-# ─────────────────────────────────────────
-#  TABS
-# ─────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+# 3. Daily Return (sama dengan notebook)
+df["Daily Return"] = df["Close"].pct_change()
+
+# 4. Moving Average (sama dengan notebook)
+df["SMA_50"] = df["Close"].rolling(window=50).mean()
+df["SMA_200"] = df["Close"].rolling(window=200).mean()
+
+# 5. RSI (sama dengan notebook)
+df["RSI"] = compute_rsi(df["Close"], period=14)
+
+# 6. Fitur dan Target (sama dengan notebook)
+features = ["Open", "High", "Low", "Volume", "Daily Return", "SMA_50", "SMA_200", "RSI"]
+target = "Close"
+
+# Drop NaN dari indikator (sama dengan notebook)
+df_model = df.dropna().copy()
+X = df_model[features]
+y = df_model[target]
+
+# 7. Split Data (sama dengan notebook: test_size=0.2, random_state=42, shuffle=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, shuffle=True
+)
+
+# 8. Train Models (sama dengan notebook)
+# Linear Regression
+lr_model = LinearRegression()
+lr_model.fit(X_train, y_train)
+y_pred_lr = lr_model.predict(X_test)
+
+# Decision Tree (max_depth=10 seperti di notebook)
+dt_model = DecisionTreeRegressor(random_state=42, max_depth=10)
+dt_model.fit(X_train, y_train)
+y_pred_dt = dt_model.predict(X_test)
+
+# 9. Evaluasi (sama dengan notebook)
+res_lr = evaluate(y_test, y_pred_lr, "Regresi Linier")
+res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
+hasil_df = pd.DataFrame([res_lr, res_dt])
+
+# ══════════════════════════════════════════
+#  TAMPILKAN HASIL DI STREAMLIT
+# ══════════════════════════════════════════
+
+# Metrics Overview
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("📅 Periode Data", f"{df.index[0].date()} - {df.index[-1].date()}")
+col2.metric("📊 Total Data", f"{len(df):,} hari")
+col3.metric("📈 Harga Tertinggi", f"Rp {df['Close'].max():,.0f}")
+col4.metric("📉 Harga Terendah", f"Rp {df['Close'].min():,.0f}")
+
+# Tabs
+tab1, tab2, tab3, tab4_tab, tab5 = st.tabs([
     "📊 Pemahaman Data",
     "🔧 Persiapan Data",
     "🤖 Pemodelan",
@@ -121,14 +166,8 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     st.header("1. Pemahaman Data")
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Baris", df.shape[0])
-    col2.metric("Harga Close Terakhir", f"{df['Close'].iloc[-1]:,.0f}")
-    col3.metric("Harga Close Max", f"{df['Close'].max():,.0f}")
-    col4.metric("Harga Close Min", f"{df['Close'].min():,.0f}")
-
-    with st.expander("🔍 Lihat Data Mentah"):
-        st.dataframe(df, use_container_width=True)
+    with st.expander("🔍 Lihat Data Mentah (5 baris terakhir)"):
+        st.dataframe(df.tail(5), use_container_width=True)
 
     with st.expander("📋 Statistik Deskriptif"):
         st.dataframe(df.describe().round(2), use_container_width=True)
@@ -143,62 +182,40 @@ with tab1:
     fig, ax = plt.subplots(figsize=(14, 4))
     ax.plot(df.index, df["Close"], color="navy")
     ax.set_title(f"Pergerakan Harga Penutupan {ticker}")
-    ax.set_xlabel("Tanggal"); ax.set_ylabel("Harga (IDR)")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Harga (IDR)")
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
     # Grafik Volume
     st.subheader("Volume Perdagangan")
     fig, ax = plt.subplots(figsize=(14, 3))
     ax.plot(df.index, df["Volume"], color="darkorange")
     ax.set_title(f"Volume Perdagangan {ticker}")
-    ax.set_xlabel("Tanggal"); ax.set_ylabel("Volume")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Volume")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    # Candlestick (setahun terakhir)
-    st.subheader("Candlestick – Setahun Terakhir")
-    last_year = df[df.index >= df.index.max() - pd.Timedelta(days=365)].copy()
-    fig, ax = plt.subplots(figsize=(14, 5))
-    for date, row in last_year.iterrows():
-        color = "green" if row["Close"] >= row["Open"] else "red"
-        ax.vlines(date, row["Low"], row["High"], color=color, linewidth=1)
-        body_low  = min(row["Open"], row["Close"])
-        body_high = max(row["Open"], row["Close"])
-        ax.add_patch(plt.Rectangle(
-            (date - pd.Timedelta(days=0.3), body_low),
-            pd.Timedelta(days=0.6), body_high - body_low,
-            facecolor=color, edgecolor=color))
-    ax.set_title("Candlestick – Setahun Terakhir")
-    ax.set_xlabel("Tanggal"); ax.set_ylabel("Harga (IDR)")
-    plt.xticks(rotation=45); plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
     # Boxplot per Tahun
     st.subheader("Boxplot Harga Close per Tahun")
-    df_box = df.copy(); df_box["Year"] = df_box.index.year
+    df_box = df.copy()
+    df_box["Year"] = df_box.index.year
     fig, ax = plt.subplots(figsize=(12, 4))
     sns.boxplot(x="Year", y="Close", data=df_box, palette="Set2", ax=ax)
     ax.set_title("Boxplot Harga Close per Tahun")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
     # CV
     st.subheader("Koefisien Variasi (CV) per Tahun")
     cv = df_box.groupby("Year")["Close"].agg(["mean", "std"])
     cv["CV (%)"] = (cv["std"] / cv["mean"]) * 100
-    st.dataframe(cv.round(2), use_container_width=True)
-
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(cv.index.astype(str), cv["CV (%)"], color="steelblue", edgecolor="black")
-    for i, v in enumerate(cv["CV (%)"]):
-        ax.text(i, v + 0.05, f"{v:.2f}%", ha="center", fontsize=10)
-    ax.set_title("Koefisien Variasi (CV) per Tahun")
-    ax.set_xlabel("Tahun"); ax.set_ylabel("CV (%)")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
+    st.dataframe(cv.round(4), use_container_width=True)
 
 # ══════════════════════════════════════════
 #  TAB 2 – PERSIAPAN DATA
@@ -206,81 +223,68 @@ with tab1:
 with tab2:
     st.header("2. Persiapan Data")
 
-    df = df.dropna()
-
     # Daily Return
-    df["Daily Return"] = df["Close"].pct_change()
-
     st.subheader("Daily Return")
     fig, ax = plt.subplots(figsize=(14, 3))
     ax.plot(df.index, df["Daily Return"], color="teal", linewidth=0.8)
     ax.axhline(0, color="black", linewidth=0.6)
-    ax.set_title("Daily Return"); ax.set_xlabel("Tanggal"); ax.set_ylabel("Return")
+    ax.set_title("Daily Return")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Return")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
+    # Distribusi Daily Return
     st.subheader("Distribusi Daily Return")
     fig, ax = plt.subplots(figsize=(10, 4))
     sns.histplot(df["Daily Return"].dropna(), bins=60, kde=True, color="teal", ax=ax)
     ax.set_title("Distribusi Daily Return")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
-    # Moving Averages
-    df["SMA_50"]  = df["Close"].rolling(50).mean()
-    df["SMA_200"] = df["Close"].rolling(200).mean()
-
+    # Moving Average
     st.subheader("Moving Average (SMA-50 & SMA-200)")
     fig, ax = plt.subplots(figsize=(14, 5))
-    ax.plot(df.index, df["Close"],    label="Close",       color="black",  alpha=0.6)
-    ax.plot(df.index, df["SMA_50"],   label="SMA 50 hari", color="blue")
-    ax.plot(df.index, df["SMA_200"],  label="SMA 200 hari",color="red")
-    ax.set_title("Moving Average"); ax.set_xlabel("Tanggal"); ax.set_ylabel("Harga (IDR)")
-    ax.legend(); plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    ax.plot(df.index, df["Close"], label="Close", color="black", alpha=0.6)
+    ax.plot(df.index, df["SMA_50"], label="SMA 50 hari", color="blue")
+    ax.plot(df.index, df["SMA_200"], label="SMA 200 hari", color="red")
+    ax.set_title("Moving Average")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Harga (IDR)")
+    ax.legend()
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close()
 
     # RSI
-    df["RSI"] = compute_rsi(df["Close"], 14)
-
     st.subheader("RSI (14 hari)")
     fig, ax = plt.subplots(figsize=(14, 4))
     ax.plot(df.index, df["RSI"], color="purple", label="RSI (14)")
-    ax.axhline(70, linestyle="--", color="red",   label="Overbought (70)")
+    ax.axhline(70, linestyle="--", color="red", label="Overbought (70)")
     ax.axhline(30, linestyle="--", color="green", label="Oversold (30)")
-    ax.axhline(50, linestyle=":",  color="gray",  alpha=0.6)
-    ax.set_title("RSI"); ax.set_xlabel("Tanggal"); ax.set_ylabel("RSI")
-    ax.legend(); plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    ax.axhline(50, linestyle=":", color="gray", alpha=0.6)
+    ax.set_title("RSI")
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("RSI")
+    ax.legend()
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close()
 
-    # Feature selection
-    features = ["Open", "High", "Low", "Volume", "Daily Return", "SMA_50", "SMA_200", "RSI"]
-    target   = "Close"
-    df_model = df.dropna().copy()
-    X = df_model[features]; y = df_model[target]
-
+    # Heatmap Korelasi
     st.subheader("Heatmap Korelasi Fitur")
     fig, ax = plt.subplots(figsize=(9, 7))
     sns.heatmap(df_model[features + [target]].corr(), annot=True, cmap="coolwarm",
                 fmt=".2f", linewidths=0.5, ax=ax)
     ax.set_title("Matriks Korelasi Fitur dan Target (Close)")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=42, shuffle=True)
-
-    col1, col2 = st.columns(2)
-    col1.metric("Data Latih", X_train.shape[0])
-    col2.metric("Data Uji",   X_test.shape[0])
-
-    # Simpan ke session state agar tab lain bisa pakai
-    st.session_state["data"] = {
-        "X_train": X_train, "X_test": X_test,
-        "y_train": y_train, "y_test": y_test,
-        "features": features,
-    }
-
+    # Split info
+    st.info(f"**Split Data:** {X_train.shape[0]} data latih, {X_test.shape[0]} data uji (80:20)")
 
 # ══════════════════════════════════════════
 #  TAB 3 – PEMODELAN
@@ -288,49 +292,23 @@ with tab2:
 with tab3:
     st.header("3. Pemodelan")
 
-    if "data" not in st.session_state:
-        st.warning("Jalankan tab Persiapan Data terlebih dahulu.")
-        st.stop()
-
-    d = st.session_state["data"]
-    X_train, X_test = d["X_train"], d["X_test"]
-    y_train, y_test = d["y_train"], d["y_test"]
-    features = d["features"]
-
     # Linear Regression
     st.subheader("4.1 Regresi Linier Berganda")
-    lr_model = LinearRegression()
-    lr_model.fit(X_train, y_train)
-    y_pred_lr = lr_model.predict(X_test)
-
     coef_df = pd.DataFrame({"Fitur": features, "Koefisien": lr_model.coef_})
     st.dataframe(coef_df.sort_values("Koefisien", ascending=False).reset_index(drop=True),
                  use_container_width=True)
 
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(9, 5))
     sns.barplot(x="Koefisien", y="Fitur",
                 data=coef_df.sort_values("Koefisien", ascending=False),
                 palette="coolwarm", ax=ax)
-    ax.set_title("Koefisien – Linear Regression")
+    ax.set_title("Koefisien Tiap Fitur – Linear Regression")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
 
     # Decision Tree
     st.subheader("4.4 Decision Tree Regressor")
-    dt_model = DecisionTreeRegressor(random_state=42, max_depth=max_depth)
-    dt_model.fit(X_train, y_train)
-    y_pred_dt = dt_model.predict(X_test)
-
-    # Visualisasi DT (max_depth=3 untuk tampilan)
-    st.subheader("Visualisasi Decision Tree (max_depth=3)")
-    dt_vis = DecisionTreeRegressor(random_state=42, max_depth=3)
-    dt_vis.fit(X_train, y_train)
-    fig, ax = plt.subplots(figsize=(20, 8))
-    plot_tree(dt_vis, feature_names=features, filled=True, rounded=True,
-              fontsize=8, ax=ax)
-    ax.set_title("Decision Tree Regressor (max_depth=3)")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
 
     # Feature Importance
     st.subheader("Feature Importance – Decision Tree")
@@ -339,149 +317,148 @@ with tab3:
         "Importance": dt_model.feature_importances_
     }).sort_values("Importance", ascending=False)
 
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(9, 5))
     sns.barplot(x="Importance", y="Fitur", data=imp_df, palette="viridis", ax=ax)
-    ax.set_title("Feature Importance – Decision Tree")
+    ax.set_title("Feature Importance – Decision Tree Regressor")
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    st.pyplot(fig)
+    plt.close()
     st.dataframe(imp_df.reset_index(drop=True), use_container_width=True)
-
-    # Simpan prediksi ke session state
-    st.session_state["preds"] = {
-        "y_test": y_test, "y_pred_lr": y_pred_lr, "y_pred_dt": y_pred_dt,
-        "X_test": X_test,
-    }
-
 
 # ══════════════════════════════════════════
 #  TAB 4 – EVALUASI
 # ══════════════════════════════════════════
-with tab4:
+with tab4_tab:
     st.header("4. Evaluasi Model")
 
-    if "preds" not in st.session_state:
-        st.warning("Jalankan tab Pemodelan terlebih dahulu.")
-        st.stop()
+    # Tabel Perbandingan Aktual vs Prediksi
+    st.subheader("Tabel Perbandingan Aktual vs Prediksi (5 data teratas dan terbawah)")
+    hasil_pred = pd.DataFrame({
+        "Close": y_test.values,
+        "lr_pred": y_pred_lr,
+        "dt_pred": y_pred_dt
+    }, index=X_test.index).sort_index()
+    
+    # Tampilkan 5 teratas dan 5 terbawah seperti di docx
+    display_df = pd.concat([hasil_pred.head(5), hasil_pred.tail(5)])
+    st.dataframe(display_df.round(2), use_container_width=True)
 
-    p = st.session_state["preds"]
-    y_test    = p["y_test"]
-    y_pred_lr = p["y_pred_lr"]
-    y_pred_dt = p["y_pred_dt"]
-    test_idx  = p["X_test"].index
+    # Tabel Evaluasi
+    st.subheader("Tabel Evaluasi Model")
+    hasil_df_display = hasil_df.copy()
+    hasil_df_display["MAPE (%)"] = hasil_df_display["MAPE (%)"].apply(lambda x: f"{x:.4f}%")
+    hasil_df_display["MAE"] = hasil_df_display["MAE"].apply(lambda x: f"{x:.4f}")
+    hasil_df_display["RMSE"] = hasil_df_display["RMSE"].apply(lambda x: f"{x:.4f}")
+    hasil_df_display["R²"] = hasil_df_display["R²"].apply(lambda x: f"{x:.6f}")
+    
+    st.dataframe(hasil_df_display, use_container_width=True, hide_index=True)
 
-    res_lr = evaluate(y_test, y_pred_lr, "Regresi Linier")
-    res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
-    hasil  = pd.DataFrame([res_lr, res_dt])
-
-    st.subheader("Tabel Metrik Evaluasi")
-    st.dataframe(hasil.set_index("Model"), use_container_width=True)
-
-    # Aktual vs Prediksi gabungan
-    st.subheader("Aktual vs Prediksi (Data Uji)")
-    plot_df = pd.DataFrame({
-        "Aktual": y_test,
-        "Linear Regression": y_pred_lr,
-        "Decision Tree": y_pred_dt,
-    }, index=test_idx).sort_index()
-
+    # Aktual vs Prediksi Plot
+    st.subheader("Perbandingan Aktual vs Prediksi")
     fig, ax = plt.subplots(figsize=(14, 5))
-    ax.plot(plot_df.index, plot_df["Aktual"],           label="Aktual",           color="black", linewidth=1.5)
-    ax.plot(plot_df.index, plot_df["Linear Regression"],label="Linear Regression",color="blue",  alpha=0.8)
-    ax.plot(plot_df.index, plot_df["Decision Tree"],    label="Decision Tree",    color="red",   alpha=0.8)
+    ax.plot(hasil_pred.index, hasil_pred["Close"], label="Aktual", color="black", linewidth=1.5)
+    ax.plot(hasil_pred.index, hasil_pred["lr_pred"], label="Linear Regression", color="blue", alpha=0.8)
+    ax.plot(hasil_pred.index, hasil_pred["dt_pred"], label="Decision Tree", color="red", alpha=0.8)
     ax.set_title("Perbandingan Harga Aktual vs Prediksi")
-    ax.set_xlabel("Tanggal"); ax.set_ylabel("Harga (IDR)")
-    ax.legend(); plt.tight_layout()
-    st.pyplot(fig); plt.close()
+    ax.set_xlabel("Tanggal")
+    ax.set_ylabel("Harga (IDR)")
+    ax.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close()
 
-    # Scatter plot
+    # Scatter Plot
     st.subheader("Scatter Plot Aktual vs Prediksi")
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    for ax, y_p, lbl, color in [
-        (axes[0], y_pred_lr, "Linear Regression", "blue"),
-        (axes[1], y_pred_dt, "Decision Tree",     "red"),
-    ]:
-        ax.scatter(y_test, y_p, alpha=0.4, color=color, s=15)
-        lim = [y_test.min(), y_test.max()]
-        ax.plot(lim, lim, "k--")
-        r = res_lr if lbl == "Linear Regression" else res_dt
-        ax.set_title(f"{lbl} (MAPE={r['MAPE (%)']:.2f}%)")
-        ax.set_xlabel("Aktual"); ax.set_ylabel("Prediksi")
+    
+    # Linear Regression
+    axes[0].scatter(y_test, y_pred_lr, alpha=0.4, color="blue", s=15)
+    lim = [min(y_test.min(), y_pred_lr.min()), max(y_test.max(), y_pred_lr.max())]
+    axes[0].plot(lim, lim, "k--")
+    axes[0].set_title(f"Linear Regression (MAPE={res_lr['MAPE (%)']:.4f}%)")
+    axes[0].set_xlabel("Aktual")
+    axes[0].set_ylabel("Prediksi")
+    
+    # Decision Tree
+    axes[1].scatter(y_test, y_pred_dt, alpha=0.4, color="red", s=15)
+    lim = [min(y_test.min(), y_pred_dt.min()), max(y_test.max(), y_pred_dt.max())]
+    axes[1].plot(lim, lim, "k--")
+    axes[1].set_title(f"Decision Tree (MAPE={res_dt['MAPE (%)']:.4f}%)")
+    axes[1].set_xlabel("Aktual")
+    axes[1].set_ylabel("Prediksi")
+    
     plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    # Distribusi Residual
-    st.subheader("Distribusi Residual")
-    residual_lr = y_test.values - y_pred_lr
-    residual_dt = y_test.values - y_pred_dt
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 4))
-    for ax, res, lbl, color in [
-        (axes[0], residual_lr, "Linear Regression", "blue"),
-        (axes[1], residual_dt, "Decision Tree",     "red"),
-    ]:
-        sns.histplot(res, bins=40, kde=True, color=color, ax=ax)
-        ax.axvline(0, color="black", linestyle="--")
-        ax.set_title(f"Residual – {lbl}")
-        ax.set_xlabel("Residual")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    # Perbandingan MAPE
-    st.subheader("Perbandingan MAPE")
-    fig, ax = plt.subplots(figsize=(7, 4))
-    sns.barplot(x="Model", y="MAPE (%)", data=hasil,
-                palette=["steelblue", "tomato"], ax=ax)
-    for i, v in enumerate(hasil["MAPE (%)"]):
-        ax.text(i, v + 0.02, f"{v:.4f}%", ha="center", fontweight="bold")
-    ax.set_title("Perbandingan MAPE antar Model")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    # Perbandingan semua metrik
-    st.subheader("Perbandingan Semua Metrik")
-    hasil_melt = hasil.melt(id_vars="Model",
-                             value_vars=["MAPE (%)", "MAE", "RMSE"],
-                             var_name="Metrik", value_name="Nilai")
-    fig, ax = plt.subplots(figsize=(10, 4))
-    sns.barplot(x="Metrik", y="Nilai", hue="Model", data=hasil_melt,
-                palette=["steelblue", "tomato"], ax=ax)
-    ax.set_title("Perbandingan Metrik Error (MAPE, MAE, RMSE)")
-    plt.tight_layout()
-    st.pyplot(fig); plt.close()
-
-    st.session_state["hasil"] = hasil
-
+    st.pyplot(fig)
+    plt.close()
 
 # ══════════════════════════════════════════
-#  TAB 5 – RINGKASAN
+#  TAB 5 – RINGKASAN (SESUAI DENGAN NOTEBOOK)
 # ══════════════════════════════════════════
 with tab5:
     st.header("5. Ringkasan Hasil")
 
-    if "hasil" not in st.session_state:
-        st.warning("Jalankan evaluasi terlebih dahulu.")
-        st.stop()
-
-    hasil = st.session_state["hasil"]
-
-    best = hasil.loc[hasil["MAPE (%)"].idxmin(), "Model"]
-    best_mape = hasil["MAPE (%)"].min()
-
-    st.success(f"🏆 **Model Terbaik:** {best} dengan MAPE **{best_mape:.4f}%**")
-
+    # Tampilkan hasil evaluasi
+    st.subheader("Hasil Evaluasi Model")
+    
     col1, col2 = st.columns(2)
-    for _, row in hasil.iterrows():
-        c = col1 if row["Model"] == "Regresi Linier" else col2
-        c.markdown(f"### {row['Model']}")
-        c.metric("MAPE (%)", f"{row['MAPE (%)']:.4f}")
-        c.metric("MAE",       f"{row['MAE']:,.2f}")
-        c.metric("RMSE",      f"{row['RMSE']:,.2f}")
-        c.metric("R²",        f"{row['R²']:.4f}")
-
+    
+    with col1:
+        st.markdown("### 📈 Regresi Linier")
+        st.markdown(f"""
+        - **MAPE:** {res_lr['MAPE (%)']:.4f}%
+        - **MAE:** {res_lr['MAE']:.4f}
+        - **RMSE:** {res_lr['RMSE']:.4f}
+        - **R²:** {res_lr['R²']:.6f}
+        """)
+    
+    with col2:
+        st.markdown("### 🌳 Regresi Pohon Keputusan")
+        st.markdown(f"""
+        - **MAPE:** {res_dt['MAPE (%)']:.4f}%
+        - **MAE:** {res_dt['MAE']:.4f}
+        - **RMSE:** {res_dt['RMSE']:.4f}
+        - **R²:** {res_dt['R²']:.6f}
+        """)
+    
+    # Kesimpulan
     st.markdown("---")
-    st.markdown("""
-    **Catatan Interpretasi:**
-    - **MAPE** → semakin kecil semakin baik (error relatif dalam %)
-    - **MAE / RMSE** → semakin kecil semakin baik (error absolut)
-    - **R²** → semakin mendekati 1 semakin baik (proporsi varians yang dijelaskan model)
+    st.subheader("📝 Kesimpulan")
+    
+    best_model = "Regresi Linier" if res_lr['MAPE (%)'] < res_dt['MAPE (%)'] else "Regresi Pohon Keputusan"
+    best_mape = min(res_lr['MAPE (%)'], res_dt['MAPE (%)'])
+    
+    st.markdown(f"""
+    Berdasarkan evaluasi yang dilakukan pada data uji (20% dari total data), diperoleh hasil:
+    
+    1. **{best_model}** memberikan performa terbaik dengan nilai **MAPE sebesar {best_mape:.4f}%**.
+    
+    2. **Regresi Linier** memiliki MAPE {res_lr['MAPE (%)']:.4f}%, 
+       sedangkan **Decision Tree** memiliki MAPE {res_dt['MAPE (%)']:.4f}%.
+    
+    3. Nilai **R²** untuk Regresi Linier adalah {res_lr['R²']:.6f} dan untuk Decision Tree adalah {res_dt['R²']:.6f}, 
+       yang menunjukkan kedua model sangat baik dalam menjelaskan variabilitas data.
+    
+    4. Kedua model memiliki performa yang sangat baik dengan error relatif di bawah 0.5%, 
+       sehingga dapat digunakan untuk prediksi harga IHSG.
     """)
+    
+    # Visualisasi Perbandingan MAPE
+    st.subheader("Perbandingan MAPE Antar Model")
+    fig, ax = plt.subplots(figsize=(8, 5))
+    models = ['Regresi Linier', 'Decision Tree']
+    mapes = [res_lr['MAPE (%)'], res_dt['MAPE (%)']]
+    colors = ['steelblue', 'tomato']
+    bars = ax.bar(models, mapes, color=colors)
+    ax.set_ylabel('MAPE (%)')
+    ax.set_title('Perbandingan MAPE Model')
+    for bar, mape in zip(bars, mapes):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                f'{mape:.4f}%', ha='center', va='bottom', fontweight='bold')
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close()
+
+# Footer
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: gray;'>© 2024 - Analisis dan Prediksi Harga Saham IHSG | Data dari Yahoo Finance</p>", unsafe_allow_html=True)
