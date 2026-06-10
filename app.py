@@ -60,7 +60,7 @@ def fig_style():
 #  SIDEBAR
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.image("Foto Berwarna.jpg", width=120)
+    st.image("Foto Berwarna.jpg", width=140)
     st.title("⚙️ Konfigurasi")
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
