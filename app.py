@@ -60,8 +60,9 @@ def fig_style():
 #  SIDEBAR
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.image("Foto Berwarna.jpg", width=140)
-    st.title("⚙️ Konfigurasi")
+    st.image("Foto Berwarna.jpg", width=110)
+    st.title("Muhamad Azzam Khoiri")
+    st.text("<h2>Universitas Gunadarma<h2>"
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
     start_date = st.date_input("Mulai", value=pd.to_datetime("2020-01-01"))
