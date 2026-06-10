@@ -88,7 +88,12 @@ with st.sidebar:
 
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
 
-
+if run_btn:
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.success("Dataset berhasil diupload")
+    else:
+        st.warning("Silakan upload file CSV terlebih dahulu")
 
 # ─────────────────────────────────────────
 #  HEADER
