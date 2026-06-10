@@ -82,7 +82,7 @@ with st.sidebar:
 # ─────────────────────────────────────────
 #  HEADER
 # ─────────────────────────────────────────
-st.title("📈 Analisis & Prediksi Harga Saham IHSG")
+st.title("📈 Analisis & Prediksi Harga Saham ^JKSE")
 st.caption("Linear Regression vs Decision Tree Regressor · Data: Yahoo Finance")
 
 if not run_btn:
