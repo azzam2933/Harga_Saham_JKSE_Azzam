@@ -73,11 +73,29 @@ with st.sidebar:
     end_date   = st.date_input("Selesai", value=pd.to_datetime("2026-03-31"))
 
     st.markdown("---")
+
+    # Upload Dataset CSV
+    uploaded_file = st.file_uploader(
+        "Upload Dataset CSV",
+        type=["csv"]
+)
+
+    st.markdown("---")
+
     max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
     test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
     st.markdown("---")
+
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
+
+    if run_btn:
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.success("Dataset berhasil diupload!")
+        st.dataframe(df.head())
+    else:
+        st.warning("Silakan upload dataset CSV terlebih dahulu.")
 
 # ─────────────────────────────────────────
 #  HEADER
