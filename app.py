@@ -278,7 +278,7 @@ with tab2:
 
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=42, shuffle=True)
+        X, y, test_size=test_size, random_state=42, shuffle=False)
 
     col1, col2 = st.columns(2)
     col1.metric("Data Latih", X_train.shape[0])
