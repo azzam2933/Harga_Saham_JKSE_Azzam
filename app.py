@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 #  PAGE CONFIG
 # ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Prediksi Saham IHSG",
+    page_title="Prediksi Saham ^JKSE",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -60,24 +60,34 @@ def fig_style():
 #  SIDEBAR
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/9/9b/IDX_Logo.svg", width=120)
-    st.title("⚙️ Konfigurasi")
+    st.image("Foto Berwarna.jpg", width=110)
+    st.title("Muhamad Azzam Khoiri")
+    st.markdown(
+        "<p style='font-size:14px; color:gray; font-weight:normal; margin-top:-10px;'>Universitas Gunadarma</p>",
+        unsafe_allow_html=True
+    )
+
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
     start_date = st.date_input("Mulai", value=pd.to_datetime("2020-01-01"))
     end_date   = st.date_input("Selesai", value=pd.to_datetime("2026-03-31"))
 
     st.markdown("---")
+
+
     max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
     test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
     st.markdown("---")
+
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
+
+
 
 # ─────────────────────────────────────────
 #  HEADER
 # ─────────────────────────────────────────
-st.title("📈 Analisis & Prediksi Harga Saham IHSG")
+st.title("📈 Analisis & Prediksi Harga Saham ^JKSE")
 st.caption("Linear Regression vs Decision Tree Regressor · Data: Yahoo Finance")
 
 if not run_btn:
@@ -317,13 +327,6 @@ with tab3:
 
     # Decision Tree
     st.subheader("4.4 Decision Tree Regressor")
-
-    # Model untuk EVALUASI: tanpa parameter — persis seperti di notebook (dt_y_pred)
-    dt_model_eval = DecisionTreeRegressor()
-    dt_model_eval.fit(X_train, y_train)
-    dt_y_pred = dt_model_eval.predict(X_test)
-
-    # Model untuk VISUALISASI & feature importance: dengan random_state & max_depth
     dt_model = DecisionTreeRegressor(random_state=42, max_depth=max_depth)
     dt_model.fit(X_train, y_train)
     y_pred_dt = dt_model.predict(X_test)
@@ -354,13 +357,8 @@ with tab3:
     st.dataframe(imp_df.reset_index(drop=True), use_container_width=True)
 
     # Simpan prediksi ke session state
-    # dt_y_pred  = tanpa parameter (dipakai evaluasi MAPE — sesuai notebook)
-    # y_pred_dt  = dengan random_state+max_depth (dipakai grafik perbandingan)
     st.session_state["preds"] = {
-        "y_test": y_test,
-        "y_pred_lr": y_pred_lr,
-        "dt_y_pred": dt_y_pred,
-        "y_pred_dt": y_pred_dt,
+        "y_test": y_test, "y_pred_lr": y_pred_lr, "y_pred_dt": y_pred_dt,
         "X_test": X_test,
     }
 
@@ -378,13 +376,11 @@ with tab4:
     p = st.session_state["preds"]
     y_test    = p["y_test"]
     y_pred_lr = p["y_pred_lr"]
-    dt_y_pred = p["dt_y_pred"]   # tanpa parameter → untuk MAPE (sesuai notebook)
-    y_pred_dt = p["y_pred_dt"]   # dengan max_depth → untuk grafik
+    y_pred_dt = p["y_pred_dt"]
     test_idx  = p["X_test"].index
 
-    # Evaluasi menggunakan model yang sama persis dengan notebook
     res_lr = evaluate(y_test, y_pred_lr, "Regresi Linier")
-    res_dt = evaluate(y_test, dt_y_pred, "Regresi Pohon Keputusan")
+    res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
     hasil  = pd.DataFrame([res_lr, res_dt])
 
     st.subheader("Tabel Metrik Evaluasi")
@@ -412,7 +408,7 @@ with tab4:
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     for ax, y_p, lbl, color in [
         (axes[0], y_pred_lr, "Linear Regression", "blue"),
-        (axes[1], dt_y_pred, "Decision Tree",     "red"),
+        (axes[1], y_pred_dt, "Decision Tree",     "red"),
     ]:
         ax.scatter(y_test, y_p, alpha=0.4, color=color, s=15)
         lim = [y_test.min(), y_test.max()]
@@ -426,7 +422,7 @@ with tab4:
     # Distribusi Residual
     st.subheader("Distribusi Residual")
     residual_lr = y_test.values - y_pred_lr
-    residual_dt = y_test.values - dt_y_pred
+    residual_dt = y_test.values - y_pred_dt
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 4))
     for ax, res, lbl, color in [
