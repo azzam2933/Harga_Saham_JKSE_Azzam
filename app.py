@@ -135,6 +135,9 @@ with tab1:
     col4.metric("Harga Close Min", f"{df['Close'].min():,.0f}")
 
     # 2.1 – 2.5
+    st.subheader("Data Mentah")
+    st.dataframe(df, use_container_width=True)
+
     with st.expander("🔍 2.1 Lihat Data Mentah (Head)"):
         st.dataframe(df.head(), use_container_width=True)
 
