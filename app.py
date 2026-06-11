@@ -73,11 +73,10 @@ with st.sidebar:
 
     st.markdown("---")
 
-        max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
+    max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
     test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
     st.markdown("---")
-
 
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
 
@@ -451,8 +450,18 @@ with tab4:
     res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
     hasil  = pd.DataFrame([res_lr, res_dt])
 
-    # Tabel Metrik Evaluasi
-    st.subheader("5.0 Tabel Metrik Evaluasi")
+    # MAPE awal (dari notebook cell sederhana)
+    st.subheader("5.0 MAPE (Ringkas)")
+    mape_lr = mean_absolute_percentage_error(y_test, y_pred_lr)
+    mape_dt = mean_absolute_percentage_error(y_test, y_pred_dt)
+    tabel_eval = pd.DataFrame({
+        "Model": ["Regresi Linier", "Regresi Pohon Keputusan"],
+        "MAPE":  [f"{mape_lr*100:.4f}%", f"{mape_dt*100:.4f}%"],
+    })
+    st.dataframe(tabel_eval, use_container_width=True)
+
+    # Tabel Metrik Lengkap
+    st.subheader("5.0 Tabel Metrik Evaluasi Lengkap")
     st.dataframe(hasil.set_index("Model"), use_container_width=True)
 
     # 5.1 – Plot Aktual vs Prediksi Linear Regression (individual)
