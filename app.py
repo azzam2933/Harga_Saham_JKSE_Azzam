@@ -73,8 +73,13 @@ with st.sidebar:
 
     st.markdown("---")
 
+        max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
+    test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
-    run_btn = st.button("Jalankan Analisis", use_container_width=True)
+    st.markdown("---")
+
+
+    run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
 
 
 # ─────────────────────────────────────────
