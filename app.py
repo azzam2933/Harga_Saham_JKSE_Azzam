@@ -450,18 +450,8 @@ with tab4:
     res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
     hasil  = pd.DataFrame([res_lr, res_dt])
 
-    # MAPE awal (dari notebook cell sederhana)
-    st.subheader("5.0 MAPE (Ringkas)")
-    mape_lr = mean_absolute_percentage_error(y_test, y_pred_lr)
-    mape_dt = mean_absolute_percentage_error(y_test, y_pred_dt)
-    tabel_eval = pd.DataFrame({
-        "Model": ["Regresi Linier", "Regresi Pohon Keputusan"],
-        "MAPE":  [f"{mape_lr*100:.4f}%", f"{mape_dt*100:.4f}%"],
-    })
-    st.dataframe(tabel_eval, use_container_width=True)
-
-    # Tabel Metrik Lengkap
-    st.subheader("5.0 Tabel Metrik Evaluasi Lengkap")
+    # Tabel Metrik Evaluasi
+    st.subheader("5.0 Tabel Metrik Evaluasi")
     st.dataframe(hasil.set_index("Model"), use_container_width=True)
 
     # 5.1 – Plot Aktual vs Prediksi Linear Regression (individual)
