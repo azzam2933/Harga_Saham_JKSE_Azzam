@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 #  PAGE CONFIG
 # ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Prediksi Saham IHSG",
+    page_title="Prediksi Saham ^JKSE",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -60,24 +60,34 @@ def fig_style():
 #  SIDEBAR
 # ─────────────────────────────────────────
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/9/9b/IDX_Logo.svg", width=120)
-    st.title("⚙️ Konfigurasi")
+    st.image("Foto Berwarna.jpg", width=110)
+    st.title("Muhamad Azzam Khoiri")
+    st.markdown(
+        "<p style='font-size:14px; color:gray; font-weight:normal; margin-top:-10px;'>Universitas Gunadarma</p>",
+        unsafe_allow_html=True
+    )
+
 
     ticker = st.text_input("Ticker Saham", value="^JKSE")
     start_date = st.date_input("Mulai", value=pd.to_datetime("2020-01-01"))
     end_date   = st.date_input("Selesai", value=pd.to_datetime("2026-03-31"))
 
     st.markdown("---")
+
+
     max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
     test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
     st.markdown("---")
+
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
+
+
 
 # ─────────────────────────────────────────
 #  HEADER
 # ─────────────────────────────────────────
-st.title("📈 Analisis & Prediksi Harga Saham IHSG")
+st.title("📈 Analisis & Prediksi Harga Saham ^JKSE")
 st.caption("Linear Regression vs Decision Tree Regressor · Data: Yahoo Finance")
 
 if not run_btn:
@@ -159,7 +169,7 @@ with tab1:
 
     # Candlestick (setahun terakhir)
     st.subheader("Candlestick – Setahun Terakhir")
-    last_year = df.last("365D").copy()
+    last_year = df[df.index >= df.index.max() - pd.Timedelta(days=365)].copy()
     fig, ax = plt.subplots(figsize=(14, 5))
     for date, row in last_year.iterrows():
         color = "green" if row["Close"] >= row["Open"] else "red"
