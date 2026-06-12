@@ -490,6 +490,7 @@ with tab4:
     plt.tight_layout(); st.pyplot(fig); plt.close()
 
 
+
 # ══════════════════════════════════════════
 #  TAB 5 – RINGKASAN
 # ══════════════════════════════════════════
