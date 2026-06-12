@@ -407,9 +407,9 @@ with tab3:
     st.dataframe(coef_df.sort_values("Koefisien", ascending=False).reset_index(drop=True),
                  use_container_width=True)
 
-    with st.expander("5 Prediksi Pertama (Decision Tree)"):
+   with st.expander("5 Prediksi Pertama (Decision Tree)"):
     st.write(dt_y_pred[:5])
-
+       
     st.subheader("4.3 Grafik Koefisien Linear Regression")
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.barplot(x="Koefisien", y="Fitur",
