@@ -466,7 +466,6 @@ with tab4:
         f"{mape_dt*100:.4f}%"
     ]
 })
-    })
     st.dataframe(tabel_eval, use_container_width=True)
 
     st.subheader("5.0 Tabel Metrik Evaluasi Lengkap")
