@@ -86,55 +86,46 @@ if not run_btn:
 # ─────────────────────────────────────────
 #  PIPELINE DATA — dijalankan SEKALI di sini
 #  Mengikuti urutan persis notebook Colab:
-#  1. Load data (CSV atau Yahoo Finance)
-#  2. dropna awal → Daily Return → SMA → RSI
-#  3. df_model = df.dropna() → Split → Fit → Evaluate
+#  1. Download → 2. dropna awal → 3. Daily Return
+#  4. SMA → 5. RSI → 6. df_model = df.dropna()
+#  7. Split → 8. Fit → 9. Evaluate
 # ─────────────────────────────────────────
+with st.spinner("Mengunduh data dari Yahoo Finance…"):
+    df_raw = yf.download(ticker, start=str(start_date), end=str(end_date), auto_adjust=False)
 
-# ── Load data: prioritaskan CSV dari notebook ──
-csv_file = "jkse_data.csv"
-import os
+if df_raw.empty:
+    st.error("Data tidak ditemukan. Periksa ticker dan rentang tanggal.")
+    st.stop()
 
-if os.path.exists(csv_file):
-    # Pakai data CSV dari notebook → hasil identik 100%
-    df_model_csv = pd.read_csv(csv_file, index_col=0, parse_dates=True)
-    df_model_csv.index.name = "Date"
+if isinstance(df_raw.columns, pd.MultiIndex):
+    df_raw.columns = df_raw.columns.get_level_values(0)
 
-    # Rekonstruksi df_raw2 dari CSV (sudah mengandung semua kolom indikator)
-    df_raw2 = df_model_csv[["Open", "High", "Low", "Close", "Adj Close", "Volume"]].copy()
-    df = df_model_csv.copy()
-    df_model = df_model_csv.copy()
-    st.success(f"✅ Data dimuat dari **jkse_data.csv** (identik dengan notebook): **{df_model.shape[0]} baris**")
+# df mentah — TIDAK dimutasi, hanya untuk Tab 1
+df_raw2 = df_raw[["Open", "High", "Low", "Close", "Adj Close", "Volume"]].copy()
+df_raw2.index.name = "Date"
+df_raw2 = df_raw2.sort_index()
+df_raw2 = df_raw2[df_raw2.index >= str(start_date)]
 
-else:
-    # Fallback: download dari Yahoo Finance
-    with st.spinner("Mengunduh data dari Yahoo Finance…"):
-        df_raw = yf.download(ticker, start=str(start_date), end=str(end_date), auto_adjust=False)
+st.success(f"✅ Data berhasil diunduh: **{df_raw2.shape[0]} baris** dari {df_raw2.index[0].date()} s.d. {df_raw2.index[-1].date()}")
 
-    if df_raw.empty:
-        st.error("Data tidak ditemukan. Periksa ticker dan rentang tanggal.")
-        st.stop()
+# ── Ikuti pipeline notebook persis ──
+df = df_raw2.copy()
 
-    if isinstance(df_raw.columns, pd.MultiIndex):
-        df_raw.columns = df_raw.columns.get_level_values(0)
+# Step 1: dropna awal (Cell 29 notebook)
+df = df.dropna()
 
-    df_raw2 = df_raw[["Open", "High", "Low", "Close", "Adj Close", "Volume"]].copy()
-    df_raw2.index.name = "Date"
-    df_raw2 = df_raw2.sort_index()
-    df_raw2 = df_raw2[df_raw2.index >= str(start_date)]
+# Step 2: Daily Return (Cell 31)
+df["Daily Return"] = df["Close"].pct_change()
 
-    st.warning("⚠️ Data diunduh dari Yahoo Finance. Untuk hasil identik dengan notebook, letakkan **jkse_data.csv** di folder yang sama dengan app.py")
-    st.success(f"✅ Data berhasil diunduh: **{df_raw2.shape[0]} baris** dari {df_raw2.index[0].date()} s.d. {df_raw2.index[-1].date()}")
+# Step 3: SMA (Cell 37)
+df["SMA_50"]  = df["Close"].rolling(window=50).mean()
+df["SMA_200"] = df["Close"].rolling(window=200).mean()
 
-    # ── Ikuti pipeline notebook persis ──
-    df = df_raw2.copy()
-    df = df.dropna()
-    df["Daily Return"] = df["Close"].pct_change()
-    df["SMA_50"]  = df["Close"].rolling(window=50).mean()
-    df["SMA_200"] = df["Close"].rolling(window=200).mean()
-    df["RSI"] = compute_rsi(df["Close"], 14)
-    df_model = df.dropna().copy()
+# Step 4: RSI (Cell 39/41)
+df["RSI"] = compute_rsi(df["Close"], 14)
 
+# Step 5: df_model (Cell 42) — dropna kedua setelah indikator
+df_model = df.dropna().copy()
 
 features = ["Open", "High", "Low", "Volume", "Daily Return", "SMA_50", "SMA_200", "RSI"]
 target   = "Close"
