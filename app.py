@@ -152,9 +152,61 @@ lr_model.fit(X_train, y_train)
 y_pred_lr = lr_model.predict(X_test)
 
 # Step 8: Fit Decision Tree (Cell 59)
-dt_model = DecisionTreeRegressor(random_state=42, max_depth=MAX_DEPTH)
+# ==========================================================
+# STEP 8 : DECISION TREE (SAMA DENGAN NOTEBOOK)
+# ==========================================================
+
+# Model utama (untuk tabel evaluasi lengkap)
+dt_model = DecisionTreeRegressor(
+    random_state=42,
+    max_depth=MAX_DEPTH
+)
+
 dt_model.fit(X_train, y_train)
 y_pred_dt = dt_model.predict(X_test)
+
+# ----------------------------------------------------------
+# MODEL KHUSUS MAPE
+# Notebook memakai DecisionTreeRegressor() tanpa parameter
+# ----------------------------------------------------------
+
+dt_model_mape = DecisionTreeRegressor()
+
+dt_model_mape.fit(X_train, y_train)
+
+dt_y_pred = dt_model_mape.predict(X_test)
+
+# ==========================================================
+# STEP 9 : EVALUATION
+# ==========================================================
+
+res_lr = evaluate(
+    y_test,
+    y_pred_lr,
+    "Regresi Linier"
+)
+
+res_dt = evaluate(
+    y_test,
+    y_pred_dt,
+    "Regresi Pohon Keputusan"
+)
+
+hasil = pd.DataFrame([res_lr, res_dt])
+
+# ==========================================================
+# MAPE SESUAI NOTEBOOK
+# ==========================================================
+
+mape_lr = mean_absolute_percentage_error(
+    y_test,
+    y_pred_lr
+)
+
+mape_dt = mean_absolute_percentage_error(
+    y_test,
+    dt_y_pred
+)
 
 # Step 9: Evaluate
 res_lr = evaluate(y_test, y_pred_lr, "Regresi Linier")
@@ -355,8 +407,8 @@ with tab3:
     st.dataframe(coef_df.sort_values("Koefisien", ascending=False).reset_index(drop=True),
                  use_container_width=True)
 
-    with st.expander("5 Prediksi Pertama (Linear Regression)"):
-        st.write(y_pred_lr[:5])
+    with st.expander("5 Prediksi Pertama (Decision Tree)"):
+    st.write(dt_y_pred[:5])
 
     st.subheader("4.3 Grafik Koefisien Linear Regression")
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -405,8 +457,15 @@ with tab4:
 
     st.subheader("5.0 MAPE (Ringkas)")
     tabel_eval = pd.DataFrame({
-        "Model": ["Regresi Linier", "Regresi Pohon Keputusan"],
-        "MAPE":  [f"{mape_lr*100:.4f}%", f"{mape_dt*100:.4f}%"],
+    "Model": [
+        "Regresi Linier",
+        "Regresi Pohon Keputusan"
+    ],
+    "MAPE": [
+        f"{mape_lr*100:.4f}%",
+        f"{mape_dt*100:.4f}%"
+    ]
+})
     })
     st.dataframe(tabel_eval, use_container_width=True)
 
