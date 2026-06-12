@@ -68,14 +68,11 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # max_depth default 10 sesuai notebook Colab
-    max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
-    # test_size default 20% sesuai notebook Colab
-    test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
-
-    st.markdown("---")
-
     run_btn = st.button("🚀 Jalankan Analisis", use_container_width=True)
+
+# Nilai tetap sesuai notebook Colab
+max_depth = 10
+test_size = 0.2
 
 
 # ─────────────────────────────────────────
