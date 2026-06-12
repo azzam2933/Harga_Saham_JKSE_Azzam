@@ -51,11 +51,6 @@ def evaluate(y_true, y_pred, name):
             "MAE": round(mae, 2), "RMSE": round(rmse, 2), "R²": round(r2, 4)}
 
 
-def fig_style():
-    sns.set_style("whitegrid")
-    plt.rcParams["axes.grid"] = True
-
-
 # ─────────────────────────────────────────
 #  SIDEBAR
 # ─────────────────────────────────────────
@@ -73,7 +68,9 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # max_depth default 10 sesuai notebook Colab
     max_depth = st.slider("Max Depth (Decision Tree)", 1, 20, 10)
+    # test_size default 20% sesuai notebook Colab
     test_size = st.slider("Ukuran Data Uji (%)", 10, 40, 20) / 100
 
     st.markdown("---")
@@ -134,7 +131,6 @@ with tab1:
     col3.metric("Harga Close Max", f"{df['Close'].max():,.0f}")
     col4.metric("Harga Close Min", f"{df['Close'].min():,.0f}")
 
-    # 2.1 – 2.5
     st.subheader("Data Mentah")
     st.dataframe(df, use_container_width=True)
 
@@ -159,7 +155,6 @@ with tab1:
         mv.columns = ["Kolom", "Missing"]
         st.dataframe(mv, use_container_width=True)
 
-    # 2.6 – Grafik Close
     st.subheader("2.6 Pergerakan Harga Penutupan (Close)")
     fig, ax = plt.subplots(figsize=(14, 5))
     ax.plot(df.index, df["Close"], color="navy")
@@ -169,7 +164,6 @@ with tab1:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 2.7 – Grafik Volume
     st.subheader("2.7 Volume Perdagangan")
     fig, ax = plt.subplots(figsize=(14, 4))
     ax.plot(df.index, df["Volume"], color="darkorange")
@@ -178,7 +172,6 @@ with tab1:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 2.8 – Candlestick (setahun terakhir)
     st.subheader("2.8 Candlestick – Setahun Terakhir")
     last_year = df[df.index >= df.index.max() - pd.Timedelta(days=365)].copy()
     fig, ax = plt.subplots(figsize=(14, 6))
@@ -196,7 +189,6 @@ with tab1:
     plt.xticks(rotation=45); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 2.9 – Boxplot per Tahun
     st.subheader("2.9 Boxplot Harga Close per Tahun")
     df_box = df.copy(); df_box["Year"] = df_box.index.year
     fig, ax = plt.subplots(figsize=(12, 5))
@@ -206,7 +198,6 @@ with tab1:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 2.10 – CV
     st.subheader("2.10 Koefisien Variasi (CV) per Tahun")
     cv = df_box.groupby("Year")["Close"].agg(["mean", "std"])
     cv["CV in %"] = (cv["std"] / cv["mean"]) * 100
@@ -221,7 +212,6 @@ with tab1:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 2.11 – Matriks Korelasi (Mean, Std, CV) — dari notebook
     st.subheader("2.11 Matriks Korelasi (Mean, Std, CV)")
     fig, ax = plt.subplots(figsize=(6, 5))
     sns.heatmap(cv.corr(), annot=True, cmap="coolwarm", fmt=".2f",
@@ -237,7 +227,6 @@ with tab1:
 with tab2:
     st.header("2. Persiapan Data")
 
-    # 3.1 – Pembersihan
     st.subheader("3.1 Pembersihan Data")
     before_shape = df.shape
     df = df.dropna()
@@ -246,12 +235,10 @@ with tab2:
     col1.metric("Baris Sebelum dropna", before_shape[0])
     col2.metric("Baris Sesudah dropna", after_shape[0])
 
-    # 3.2 – Daily Return
     st.subheader("3.2 Daily Return")
     df["Daily Return"] = df["Close"].pct_change()
     st.dataframe(df[["Close", "Daily Return"]].head(10), use_container_width=True)
 
-    # 3.3 – Grafik Daily Return
     st.subheader("3.3 Grafik Daily Return")
     fig, ax = plt.subplots(figsize=(14, 4))
     ax.plot(df.index, df["Daily Return"], color="teal", linewidth=0.8)
@@ -261,7 +248,6 @@ with tab2:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 3.4 – Distribusi Daily Return
     st.subheader("3.4 Distribusi Daily Return")
     fig, ax = plt.subplots(figsize=(10, 5))
     sns.histplot(df["Daily Return"].dropna(), bins=60, kde=True, color="teal", ax=ax)
@@ -270,7 +256,6 @@ with tab2:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 3.5 – Moving Averages
     df["SMA_50"]  = df["Close"].rolling(50).mean()
     df["SMA_200"] = df["Close"].rolling(200).mean()
 
@@ -284,7 +269,6 @@ with tab2:
     ax.legend(); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 3.6 – RSI
     df["RSI"] = compute_rsi(df["Close"], 14)
 
     st.subheader("3.6 RSI (14 hari)")
@@ -298,7 +282,6 @@ with tab2:
     ax.legend(); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 3.7 – Feature selection
     st.subheader("3.7 Pemilihan Fitur")
     features = ["Open", "High", "Low", "Volume", "Daily Return", "SMA_50", "SMA_200", "RSI"]
     target   = "Close"
@@ -309,7 +292,6 @@ with tab2:
     st.write(f"**Target (y):** {target}")
     st.dataframe(X.head(), use_container_width=True)
 
-    # 3.8 – Heatmap Korelasi Fitur
     st.subheader("3.8 Heatmap Korelasi Fitur")
     fig, ax = plt.subplots(figsize=(9, 7))
     sns.heatmap(df_model[features + [target]].corr(), annot=True, cmap="coolwarm",
@@ -318,8 +300,8 @@ with tab2:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 3.9 – Train-test split
     st.subheader("3.9 Split Data Latih dan Data Uji")
+    # ⚠️ PENTING: shuffle=True, random_state=42 — identik dengan notebook Colab
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=42, shuffle=True)
 
@@ -357,7 +339,6 @@ with tab3:
 
     st.write(f"**Intercept:** {lr_model.intercept_:.4f}")
 
-    # 4.2 – Tabel Koefisien
     st.subheader("4.2 Tabel Koefisien Linear Regression")
     coef_df = pd.DataFrame({"Fitur": features, "Koefisien": lr_model.coef_})
     st.dataframe(coef_df.sort_values("Koefisien", ascending=False).reset_index(drop=True),
@@ -366,7 +347,6 @@ with tab3:
     with st.expander("5 Prediksi Pertama (Linear Regression)"):
         st.write(y_pred_lr[:5])
 
-    # 4.3 – Grafik Koefisien
     st.subheader("4.3 Grafik Koefisien Linear Regression")
     fig, ax = plt.subplots(figsize=(9, 5))
     sns.barplot(x="Koefisien", y="Fitur",
@@ -377,6 +357,8 @@ with tab3:
     st.pyplot(fig); plt.close()
 
     # 4.4 – Decision Tree
+    # ⚠️ PENTING: max_depth dari slider untuk pemodelan utama,
+    #    sama persis dengan notebook saat default (10)
     st.subheader("4.4 Regresi Pohon Keputusan (Decision Tree Regressor)")
     dt_model = DecisionTreeRegressor(random_state=42, max_depth=max_depth)
     dt_model.fit(X_train, y_train)
@@ -385,7 +367,6 @@ with tab3:
     with st.expander("5 Prediksi Pertama (Decision Tree)"):
         st.write(y_pred_dt[:5])
 
-    # 4.5 – Visualisasi DT (max_depth=3)
     st.subheader("4.5 Visualisasi Decision Tree (max_depth=3)")
     dt_vis = DecisionTreeRegressor(random_state=42, max_depth=3)
     dt_vis.fit(X_train, y_train)
@@ -396,7 +377,6 @@ with tab3:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 4.6 – Feature Importance
     st.subheader("4.6 Feature Importance – Decision Tree")
     imp_df = pd.DataFrame({
         "Fitur": features,
@@ -410,7 +390,6 @@ with tab3:
     st.pyplot(fig); plt.close()
     st.dataframe(imp_df.reset_index(drop=True), use_container_width=True)
 
-    # 4.7 – Tabel Perbandingan Aktual vs Prediksi (dari notebook)
     st.subheader("4.7 Tabel Perbandingan Aktual vs Prediksi")
     hasil_pred = pd.DataFrame({
         "Close (Aktual)": y_test,
@@ -423,7 +402,6 @@ with tab3:
         use_container_width=True
     )
 
-    # Simpan prediksi ke session state
     st.session_state["preds"] = {
         "y_test": y_test, "y_pred_lr": y_pred_lr, "y_pred_dt": y_pred_dt,
         "X_test": X_test,
@@ -450,21 +428,22 @@ with tab4:
     res_dt = evaluate(y_test, y_pred_dt, "Regresi Pohon Keputusan")
     hasil  = pd.DataFrame([res_lr, res_dt])
 
-    # MAPE awal (dari notebook cell sederhana)
-    st.subheader("5.0 MAPE (Ringkas)")
+    # ⚠️ FIX: mape_lr & mape_dt dihitung dari y_pred_lr / y_pred_dt
+    #    (sebelumnya kode asli pakai variabel 'map' dan 'dt_map' dari notebook
+    #    yang merujuk ke y_pred berbeda — sekarang konsisten)
     mape_lr = mean_absolute_percentage_error(y_test, y_pred_lr)
     mape_dt = mean_absolute_percentage_error(y_test, y_pred_dt)
+
+    st.subheader("5.0 MAPE (Ringkas)")
     tabel_eval = pd.DataFrame({
         "Model": ["Regresi Linier", "Regresi Pohon Keputusan"],
         "MAPE":  [f"{mape_lr*100:.4f}%", f"{mape_dt*100:.4f}%"],
     })
     st.dataframe(tabel_eval, use_container_width=True)
 
-    # Tabel Metrik Lengkap
     st.subheader("5.0 Tabel Metrik Evaluasi Lengkap")
     st.dataframe(hasil.set_index("Model"), use_container_width=True)
 
-    # 5.1 – Plot Aktual vs Prediksi Linear Regression (individual)
     st.subheader("5.1 Aktual vs Prediksi – Linear Regression")
     plot_lr = pd.DataFrame({
         "Aktual":   y_test,
@@ -480,7 +459,6 @@ with tab4:
     ax.legend(); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.2 – Plot Aktual vs Prediksi Decision Tree (individual)
     st.subheader("5.2 Aktual vs Prediksi – Decision Tree")
     plot_dt = pd.DataFrame({
         "Aktual":   y_test,
@@ -496,7 +474,6 @@ with tab4:
     ax.legend(); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.3 – Plot Gabungan
     st.subheader("5.3 Aktual vs Prediksi Kedua Model (Gabungan)")
     plot_df = pd.DataFrame({
         "Aktual":           y_test,
@@ -515,7 +492,6 @@ with tab4:
     ax.legend(); plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.4 – Scatter plot
     st.subheader("5.4 Scatter Plot Aktual vs Prediksi")
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     for ax, y_p, lbl, color, res in [
@@ -530,7 +506,6 @@ with tab4:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.5 – Distribusi Residual
     st.subheader("5.5 Distribusi Residual / Error")
     residual_lr = y_test.values - y_pred_lr
     residual_dt = y_test.values - y_pred_dt
@@ -547,7 +522,6 @@ with tab4:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.6 – Perbandingan MAPE
     st.subheader("5.6 Perbandingan MAPE")
     fig, ax = plt.subplots(figsize=(7, 4))
     sns.barplot(x="Model", y="MAPE (%)", data=hasil,
@@ -558,7 +532,6 @@ with tab4:
     plt.tight_layout()
     st.pyplot(fig); plt.close()
 
-    # 5.7 – Perbandingan semua metrik
     st.subheader("5.7 Perbandingan Semua Metrik")
     hasil_melt = hasil.melt(id_vars="Model",
                              value_vars=["MAPE (%)", "MAE", "RMSE"],
